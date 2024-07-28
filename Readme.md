@@ -38,39 +38,45 @@ Before running the project, make sure you have the following installed:
    ```shell
    git clone https://github.com/SumitM28/telegram-weather-bot.git
    ```
-2. Navigate to Backend Server for bot
+
+2. Navigate to root folder
+    ```
+   cd telegram-weather-bot
+   ```
+
+3. Navigate to Backend Server for bot
     ```
    cd nest-backend-bot
    npm install
    ```
 
-3. Create a .env file:
+4. Create a .env file:
     ```
     TELEGRAM_BOT_TOKEN =
     WEATHER_API_KEY =
     DATABASE_CONNECTION_STRING = 
     ```
 
-4. Start the Nest.js application:
+5. Start the Nest.js application:
     ```
     npm start
     ```
 
-5. Now, Navigate to Admin Dashboard Frontend 
+6. Now, Navigate to Admin Dashboard Frontend 
     ```
    cd weather-bot-admin-panel
    npm install
    ```
 
-6. Run the Admin Dashboard
+7. Run the Admin Dashboard
     ```
    npm start
    ```
 
     
-7. Your Telegram bot is now running and ready to receive commands.
+8. Your Telegram bot is now running and ready to receive commands.
 
-8. Users can interact with the bot by sending commands like /subscribe and /unsubscribe.
+9. Users can interact with the bot by sending commands like /subscribe and /unsubscribe.
 
 
 ## Contributing
