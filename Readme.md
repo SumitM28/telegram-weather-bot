@@ -29,6 +29,18 @@ Before running the project, make sure you have the following installed:
 - [MongoDB](https://www.mongodb.com/)
 - [npm](https://www.npmjs.com/)
 
+## Prerequisites
+
+1. Telegram Bot Image
+<img src="https://raw.githubusercontent.com/SumitM28/telegram-weather-bot/main/previews/1.png" />
+
+2. Admin Page Images
+<img src="https://raw.githubusercontent.com/SumitM28/telegram-weather-bot/main/previews/2.png" />
+<img src="https://raw.githubusercontent.com/SumitM28/telegram-weather-bot/main/previews/3.png" />
+<img src="https://raw.githubusercontent.com/SumitM28/telegram-weather-bot/main/previews/4.png" />
+<img src="https://raw.githubusercontent.com/SumitM28/telegram-weather-bot/main/previews/5.png" />
+<img src="https://raw.githubusercontent.com/SumitM28/telegram-weather-bot/main/previews/6.png" />
+
 ## Getting Started
 
 ### Installation
@@ -68,7 +80,19 @@ Before running the project, make sure you have the following installed:
    npm install
    ```
 
-7. Run the Admin Dashboard
+7. Enter your firebase credentias for google authentication
+    ```
+    const firebaseConfig = {
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
+    }
+   ```
+
+8. Run the Admin Dashboard
     ```
    npm start
    ```
