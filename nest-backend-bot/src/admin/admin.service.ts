@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AdminService {
-  private apiKey =process.env.WEATHER_API_KEY || ""; // Initial API key
+  private apiKey =process.env.WEATHER_API_KEY ;
   private users: string[] = []; // Store user data here
 
   getApiKey(): string {
