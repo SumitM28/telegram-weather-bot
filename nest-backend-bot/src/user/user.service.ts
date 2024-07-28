@@ -10,7 +10,7 @@ import { User } from './user.schema';
 export class UserService {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
-  async createUser(chatId: number, username: string): Promise<User> {    
+  async createUser(chatId: number, username: string): Promise<User> {
     const user = new this.userModel({ chatId, username });
     return user.save();
   }
@@ -25,5 +25,13 @@ export class UserService {
 
   async getUserByChatId(chatId: number): Promise<User | null> {
     return this.userModel.findOne({ chatId }).exec();
+  }
+
+  async updateUserLocation(chatId: number, city: string): Promise<User | null> {
+    return await this.userModel.findOneAndUpdate(
+      { chatId },
+      { city },
+      { new: true, upsert: true },
+    );
   }
 }

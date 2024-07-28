@@ -12,6 +12,9 @@ export class User extends Document {
   @Prop({ required: true })
   username: string;
 
+  @Prop({required:false})
+  city:string
+
   // Add any other fields you need
 
   @Prop({ default: Date.now })

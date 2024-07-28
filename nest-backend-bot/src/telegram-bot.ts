@@ -8,11 +8,8 @@ config();
 import { AdminService } from './admin/admin.service';
 import { UserService } from './user/user.service';
 
-
 // Replace with your Telegram bot token
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const CITY = process.env.CITY;
-
 
 // Interface to represent the expected structure of the weather API response
 interface WeatherResponse {
@@ -28,9 +25,12 @@ interface WeatherResponse {
 export class TelegramBotService {
   private bot: TelegramBot;
   private subscribedUsers: Set<number> = new Set<number>();
+  private subscribedUserLocations:{ [key: number]: string }={}
 
-  constructor(private readonly adminService: AdminService, private readonly userService: UserService,) {
-    
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly userService: UserService,
+  ) {
     this.bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
 
     this.loadSubscribedUsers();
@@ -39,111 +39,115 @@ export class TelegramBotService {
 
     // Schedule the sendWeatherUpdates function to run every hour
     cron.schedule('0 * * * *', () => {
-        console.log("sending update");
-        
+      console.log('sending update');
+
       this.sendWeatherUpdatesToAll();
     });
   }
 
   private registerCommands() {
-    console.log("hello");
+    
 
-    this.bot.onText(/\/start/, async(msg)=>{
-      console.log("Hello");
+    this.bot.onText(/\/start/, async (msg) => {
+      console.log('Hello');
       const chatId = msg.chat.id;
-      const first_name = msg.from.first_name
+      const first_name = msg.from.first_name;
 
-      this.bot.sendMessage(chatId, `Hi ${first_name}, welcome to the weather bot, you can subscribe by using the /subscribe command, and unsubscribe using /unsubscribe command}`)
-      
-
-    })
+      this.bot.sendMessage(
+        chatId,
+        `Hi ${first_name}, welcome to the weather bot, you can subscribe by using the /subscribe command, and unsubscribe using /unsubscribe command}`,
+      );
+    });
     this.bot.onText(/\/subscribe/, async (msg) => {
-      console.log(msg);
-      
+      // console.log(msg);
+
       const chatId = msg.chat.id;
       const userId = msg.from.id;
       const username = msg.from.first_name;
-  
+
       const existingUser = await this.userService.getUserByChatId(chatId);
       console.log(existingUser);
-      
-  
+
       if (existingUser) {
         this.bot.sendMessage(chatId, 'You are already registered.');
       } else {
         const user = await this.userService.createUser(userId, username);
         if (user) {
-          this.bot.sendMessage(chatId, 'You have been registered.');
+          this.bot.sendMessage(
+            chatId,
+            'You have been registered. Now you can find the weather by the city name.',
+          );
           this.subscribedUsers.add(chatId);
-          this.sendWeatherUpdate(chatId);
         } else {
-          this.bot.sendMessage(chatId, 'Registration failed. Please try again.');
+          this.bot.sendMessage(
+            chatId,
+            'Registration failed. Please try again.',
+          );
         }
       }
     });
-  
+
     this.bot.onText(/\/unsubscribe/, async (msg) => {
       const chatId = msg.chat.id;
-  
+
       const existingUser = await this.userService.getUserByChatId(chatId);
       if (existingUser) {
         const deletedUser = await this.userService.deleteUser(chatId);
         if (deletedUser) {
           this.subscribedUsers.delete(chatId);
+          delete this.subscribedUserLocations[chatId];
           this.bot.sendMessage(chatId, 'You have been unregistered.');
         } else {
-          this.bot.sendMessage(chatId, 'Unregistration failed. Please try again.');
+          this.bot.sendMessage(
+            chatId,
+            'Unregistration failed. Please try again.',
+          );
         }
       } else {
         this.bot.sendMessage(chatId, 'You are not registered.');
       }
     });
-  
 
-    // this.bot.onText(/\/subscribe/, (msg) => {
-    //   const chatId = msg.chat.id;
-    //   if (this.subscribedUsers.has(chatId)) {
-    //     this.bot.sendMessage(chatId, 'You are already subscribed.');
-    //   } else {
-    //     this.subscribedUsers.add(chatId);
-    //     this.bot.sendMessage(
-    //       chatId,
-    //       'You are now subscribed to weather updates here.',
-    //     );
-    //     console.log("calling function");
-        
-    //     this.sendWeatherUpdate(chatId);
-    //   }
-    // });
-
-    // this.bot.onText(/\/unsubscribe/, (msg) => {
-    //   const chatId = msg.chat.id;
-    //   if (this.subscribedUsers.has(chatId)) {
-    //     this.subscribedUsers.delete(chatId);
-    //     this.bot.sendMessage(
-    //       chatId,
-    //       'You have unsubscribed from weather updates.',
-    //     );
-    //   } else {
-    //     this.bot.sendMessage(chatId, 'You are not subscribed.');
-    //   }
-    // });
+    this.bot.onText(/.*/, async (msg) => {
+      const city = msg.text;
+      const chatId = msg.chat.id;
     
+      // Validation to ignore certain commands
+      const ignoredCommands = ['/start', '/subscribe', '/unsubscribe'];
+      if (ignoredCommands.includes(city.toLowerCase())) {
+        return;
+      }
+    
+      const existingUser = await this.userService.getUserByChatId(chatId);
+      // console.log(existingUser);
+      
+      if (!existingUser) {
+        this.bot.sendMessage(chatId, 'You are not registered. Please register by using /subscribe command.');
+        return;
+      }
+    
+      this.subscribedUsers.add(chatId);
+      await this.userService.updateUserLocation(chatId,city)
+      this.subscribedUserLocations[chatId]=city
+      this.sendWeatherUpdate(chatId, city);
+    });
+    
+
+
   }
 
-  private async sendWeatherUpdate(chatId: number) {
-
+  private async sendWeatherUpdate(chatId: number, City: string) {
     const apiKey = this.adminService.getApiKey();
-    console.log(apiKey);
-    
+    // console.log(apiKey);
 
     try {
       const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${CITY}&appid=${apiKey}`,
+        `https://api.openweathermap.org/data/2.5/weather?q=${City}&appid=${apiKey}`,
       );
 
       if (!response.ok) {
-        Logger.error('Failed to fetch weather data');
+        this.bot.sendMessage(chatId,"Something wents wrong! Please try again.")
+        // Logger.error('Failed to fetch weather data');
         return;
       }
 
@@ -152,18 +156,18 @@ export class TelegramBotService {
       const weatherDescription = data.weather[0]?.description;
       const temperature = (data.main?.temp - 273.15)?.toFixed(2); // Convert to Celsius
 
-      const message = `Weather in ${CITY}:\n${weatherDescription}\nTemperature: ${temperature}°C`;
-
+      const message = `Weather in ${City}:\n${weatherDescription}\nTemperature: ${temperature}°C`;
       this.bot.sendMessage(chatId, message);
     } catch (error) {
       Logger.error('Error fetching weather data', error);
+      this.bot.sendMessage(chatId,"Invalid city name.")
     }
   }
 
   private async sendWeatherUpdatesToAll() {
     // This function sends weather updates to all subscribed users
     for (const chatId of this.subscribedUsers) {
-      this.sendWeatherUpdate(chatId);
+      this.sendWeatherUpdate(chatId, this.subscribedUserLocations[chatId]);
     }
   }
 
@@ -173,5 +177,4 @@ export class TelegramBotService {
       this.subscribedUsers.add(user.chatId);
     });
   }
-  
 }
